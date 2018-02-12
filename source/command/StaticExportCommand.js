@@ -203,6 +203,8 @@ class StaticExportCommand extends Command
             const entitiesRepository = scope.context.di.create(EntitiesRepository);
             const imageRenderer = scope.context.di.create(ImageRenderer);
             const basePath = yield pathesConfiguration.resolve((parameters && parameters.destination) || moduleConfiguration.exportPath);
+            const query = parameters && parameters._ && parameters._[0] || '*';
+
 
             // Create html
             this.images = {};
@@ -210,7 +212,7 @@ class StaticExportCommand extends Command
             this.svgs = {};
             const htmlOptions =
             {
-                query: parameters && parameters._ && parameters._[0] || '*',
+                query: query,
                 exportName: 'static',
                 filepathTemplate: '',
                 filterCallbacks:
@@ -254,7 +256,7 @@ class StaticExportCommand extends Command
             // Compile sass
             const sassOptions =
             {
-                query: parameters.query,
+                query: query,
                 entities: entities,
                 writePath: basePath,
                 bundleTemplate: 'css/${site.name.urlify()}-${group}.scss'
@@ -264,10 +266,9 @@ class StaticExportCommand extends Command
             yield sassTask.run(buildConfiguration, sassOptions);
 
             // Compile js
-            /*
             const jsOptions =
             {
-                query: parameters.query,                
+                query: query,                
                 entities: entities,
                 writePath: basePath,
                 bundleTemplate: 'js/${site.name.urlify()}-${group}.js'
@@ -275,7 +276,6 @@ class StaticExportCommand extends Command
             const jsTask = scope.context.di.create(JspmBundleTask, mapping)
                 .pipe(scope.context.di.create(WriteFilesTask, mapping));
             yield jsTask.run(buildConfiguration, jsOptions);
-            */
 
             // Copy used images
             for (const imageUrl in this.images)
