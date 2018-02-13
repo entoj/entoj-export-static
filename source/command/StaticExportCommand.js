@@ -129,7 +129,11 @@ class StaticExportCommand extends Command
         hash.update(value);
         const md5 = hash.digest('hex');
         data.path = value;
-        data.url = 'assets/images/' + (path.basename(data.asset).split('.').shift()) + '_' + md5 + path.extname(data.asset);
+        const extension = path.extname(data.asset);
+        const folder = (['.mp4', '.webm', '.ogg'].indexOf(extension) > -1)
+            ? 'videos'
+            : 'images';
+        data.url = 'assets/' + folder + '/' + (path.basename(data.asset).split('.').shift()) + '_' + md5 + extension;
         this.assets[data.url] = data;
         return data.url;
     }
