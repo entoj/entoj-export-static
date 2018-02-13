@@ -13,8 +13,8 @@ TEST=$SELF/test
 echo "Running Linter"
 $LINT
 
-echo "Running Tests"
-$TEST
+# echo "Running Tests"
+# $TEST
 
 echo "Tagging release"
 npm version ${1:-patch}
