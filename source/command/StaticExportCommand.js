@@ -176,7 +176,7 @@ class StaticExportCommand extends Command
             case 'bundle':
                 data.url = 'js/' + data.site.name.urlify() + '-' + data.group + '.js';
                 break;
-            
+
             case 'link':
                 const hash = crypto.createHash('md5');
                 hash.update(data.path);
@@ -208,7 +208,6 @@ class StaticExportCommand extends Command
             const imageRenderer = scope.context.di.create(ImageRenderer);
             const basePath = yield pathesConfiguration.resolve((parameters && parameters.destination) || moduleConfiguration.exportPath);
             const query = parameters && parameters._ && parameters._[0] || '*';
-
 
             // Create html
             this.images = {};
@@ -272,7 +271,7 @@ class StaticExportCommand extends Command
             // Compile js
             const jsOptions =
             {
-                query: query,                
+                query: query,
                 entities: entities,
                 writePath: basePath,
                 bundleTemplate: 'js/${site.name.urlify()}-${group}.js'
@@ -306,7 +305,7 @@ class StaticExportCommand extends Command
                 const svgSourcePath = path.join(pathesConfiguration.sites, svg.path.replace(/#icon/, ''));
                 const svgDestPath = path.join(basePath, svg.url.replace(/#icon/, ''));
                 yield fs.copy(svgSourcePath, svgDestPath);
-            }            
+            }
 
             // Copy configured assets
             const assetPathes =
