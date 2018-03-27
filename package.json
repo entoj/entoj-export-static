@@ -1,6 +1,6 @@
 {
   "name": "entoj-export-static",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": false,
   "engines": {
     "node": ">=6.x"
