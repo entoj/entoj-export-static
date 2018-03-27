@@ -22,6 +22,8 @@ const co = require('co');
 const fs = require('co-fs-extra');
 const crypto = require('crypto');
 const path = require('path');
+const gitRev = require('git-rev-promises');
+const templateString = require('es6-template-strings');
 
 
 /**
@@ -38,6 +40,21 @@ class StaticExportCommand extends Command
 
         // Assign options
         this.name = ['export'];
+        this._moduleConfiguration = this.context.di.create(StaticModuleConfiguration);
+
+        // Settings
+        this.imageDirectory = 'images/';
+        this.imageUrl = 'images/';
+        this.videoDirectory = 'videos/';
+        this.videoUrl = 'videos/';
+        this.assetDirectory = 'assets/';
+        this.assetUrl = 'assets/';
+        this.cssDirectory = 'css/';
+        this.cssUrl = 'css/';
+        this.svgDirectory = 'assets/';
+        this.svgUrl = 'assets/';
+
+        // Storages
         this.images = {};
         this.assets = {};
         this.svgs = {};
@@ -102,10 +119,73 @@ class StaticExportCommand extends Command
 
 
     /**
+     * @type {configuration.StaticModuleConfiguration}
+     */
+    get moduleConfiguration()
+    {
+        return this._moduleConfiguration;
+    }
+
+
+    /**
+     * @inheritDoc
+     * @returns {Promise}
+     */
+    prepareSettings()
+    {
+        const scope = this;
+        const promise = co(function*()
+        {
+            const data =
+            {
+                date: new Date(),
+                gitHash: yield gitRev.long(),
+                gitBranch: yield gitRev.branch()
+            };
+            const renderTemplate = (template) =>
+            {
+                let result = templateString(template, data);
+                if (!result.endsWith('/'))
+                {
+                    result+= '/';
+                }
+                return result;
+            };
+
+            scope.imageDirectory = renderTemplate(scope.moduleConfiguration.imageDirectoryTemplate);
+            scope.imageUrl = scope.moduleConfiguration.imageUrlTemplate
+                ? renderTemplate(scope.moduleConfiguration.imageUrlTemplate)
+                : scope.imageDirectory;
+            scope.videoDirectory = renderTemplate(scope.moduleConfiguration.videoDirectoryTemplate);
+            scope.videoUrl = scope.moduleConfiguration.videoUrlTemplate
+                ? renderTemplate(scope.moduleConfiguration.videoUrlTemplate)
+                : scope.videoDirectory;
+            scope.assetDirectory = renderTemplate(scope.moduleConfiguration.assetDirectoryTemplate);
+            scope.assetUrl = scope.moduleConfiguration.assetUrlTemplate
+                ? renderTemplate(scope.moduleConfiguration.assetUrlTemplate)
+                : scope.assetDirectory;
+            scope.svgDirectory = renderTemplate(scope.moduleConfiguration.svgDirectoryTemplate);
+            scope.svgUrl = scope.moduleConfiguration.svgUrlTemplate
+                ? renderTemplate(scope.moduleConfiguration.svgUrlTemplate)
+                : scope.svgDirectory;
+            scope.cssDirectory = renderTemplate(scope.moduleConfiguration.cssDirectoryTemplate);
+            scope.cssUrl = scope.moduleConfiguration.cssUrlTemplate
+                ? renderTemplate(scope.moduleConfiguration.cssUrlTemplate)
+                : scope.cssDirectory;
+            scope.jsDirectory = renderTemplate(scope.moduleConfiguration.jsDirectoryTemplate);
+            scope.jsUrl = scope.moduleConfiguration.jsUrlTemplate
+                ? renderTemplate(scope.moduleConfiguration.jsUrlTemplate)
+                : scope.jsDirectory;
+        });
+        return promise;
+    }
+
+
+    /**
      * @inheritDoc
      * @returns {String}
      */
-    imageUrl(filter, value, args, data)
+    imageUrlCallback(filter, value, args, data)
     {
         const hash = crypto.createHash('md5');
         hash.update(data.image);
@@ -113,7 +193,9 @@ class StaticExportCommand extends Command
         hash.update(data.height + '');
         hash.update(data.forced + '');
         const md5 = hash.digest('hex');
-        data.url = 'images/' + (path.basename(data.image).split('.').shift()) + '_' + md5 + path.extname(data.image);
+        data.file = (path.basename(data.image).split('.').shift()) + '_' + md5 + path.extname(data.image);
+        data.url = this.imageUrl + data.file;
+        data.filename = this.imageDirectory + data.file;
         this.images[data.url] = data;
         return data.url;
     }
@@ -123,17 +205,23 @@ class StaticExportCommand extends Command
      * @inheritDoc
      * @returns {String}
      */
-    assetUrl(filter, value, args, data)
+    assetUrlCallback(filter, value, args, data)
     {
         const hash = crypto.createHash('md5');
         hash.update(value);
         const md5 = hash.digest('hex');
         data.path = value;
         const extension = path.extname(data.asset);
-        const folder = (['.mp4', '.webm', '.ogg'].indexOf(extension) > -1)
-            ? 'videos'
-            : 'images';
-        data.url = 'assets/' + folder + '/' + (path.basename(data.asset).split('.').shift()) + '_' + md5 + extension;
+        const isVideo = (['.mp4', '.webm', '.ogg'].indexOf(extension) > -1);
+        const directory = isVideo
+            ? this.videoDirectory
+            : this.assetDirectory;
+        const url = isVideo
+            ? this.videoUrl
+            : this.assetUrl;
+        data.file = (path.basename(data.asset).split('.').shift()) + '_' + md5 + extension;
+        data.filename = directory + data.file;
+        data.url = url + data.file;
         this.assets[data.url] = data;
         return data.url;
     }
@@ -143,13 +231,15 @@ class StaticExportCommand extends Command
      * @inheritDoc
      * @returns {String}
      */
-    svgUrl(filter, value, args, data)
+    svgUrlCallback(filter, value, args, data)
     {
         const hash = crypto.createHash('md5');
         hash.update(value);
         const md5 = hash.digest('hex');
         data.path = value;
-        data.url = 'assets/svg/' + (path.basename(data.asset).split('.').shift()) + '_' + md5 + '.svg#icon';
+        data.file = (path.basename(data.asset).split('.').shift()) + '_' + md5 + '.svg#icon';
+        data.filename = this.videoDirectory + data.file;
+        data.url = this.videoUrl + data.file;
         this.svgs[data.url] = data;
         return data.url;
     }
@@ -159,9 +249,9 @@ class StaticExportCommand extends Command
      * @inheritDoc
      * @returns {String}
      */
-    cssUrl(filter, value, args, data)
+    cssUrlCallback(filter, value, args, data)
     {
-        return 'css/' + data.site.name.urlify() + '-' + data.group + '.css';
+        return this.cssUrl + data.site.name.urlify() + '-' + data.group + '.css';
     }
 
 
@@ -169,19 +259,19 @@ class StaticExportCommand extends Command
      * @inheritDoc
      * @returns {String}
      */
-    jsUrl(filter, value, args, data)
+    jsUrlCallback(filter, value, args, data)
     {
         switch (data.type)
         {
             case 'bundle':
-                data.url = 'js/' + data.site.name.urlify() + '-' + data.group + '.js';
+                data.url = this.jsUrl + data.site.name.urlify() + '-' + data.group + '.js';
                 break;
 
             case 'link':
                 const hash = crypto.createHash('md5');
                 hash.update(data.path);
                 const md5 = hash.digest('hex');
-                data.url = 'js/' + (path.basename(data.path).split('.').shift()) + '_' + md5 + '.js';
+                data.url = this.jsUrl + (path.basename(data.path).split('.').shift()) + '_' + md5 + '.js';
                 this.assets[data.url] = data;
                 break;
         }
@@ -198,16 +288,17 @@ class StaticExportCommand extends Command
         const scope = this;
         const promise = co(function *()
         {
+            // Prepare
             const logger = scope.createLogger('command.export.static');
             const mapping = new Map();
             mapping.set(CliLogger, logger);
             const pathesConfiguration = scope.context.di.create(PathesConfiguration);
-            const moduleConfiguration = scope.context.di.create(StaticModuleConfiguration);
             const buildConfiguration = scope.context.di.create(BuildConfiguration);
             const entitiesRepository = scope.context.di.create(EntitiesRepository);
             const imageRenderer = scope.context.di.create(ImageRenderer);
-            const basePath = yield pathesConfiguration.resolve((parameters && parameters.destination) || moduleConfiguration.exportPath);
+            const basePath = yield pathesConfiguration.resolve((parameters && parameters.destination) || scope.moduleConfiguration.exportPath);
             const query = parameters && parameters._ && parameters._[0] || '*';
+            yield scope.prepareSettings();
 
             // Create html
             this.images = {};
@@ -220,11 +311,11 @@ class StaticExportCommand extends Command
                 filepathTemplate: '',
                 filterCallbacks:
                 {
-                    imageUrl: scope.imageUrl.bind(this),
-                    assetUrl: scope.assetUrl.bind(this),
-                    svgUrl: scope.svgUrl.bind(this),
-                    cssUrl: scope.cssUrl.bind(this),
-                    jsUrl: scope.jsUrl.bind(this)
+                    imageUrl: scope.imageUrlCallback.bind(scope),
+                    assetUrl: scope.assetUrlCallback.bind(scope),
+                    svgUrl: scope.svgUrlCallback.bind(scope),
+                    cssUrl: scope.cssUrlCallback.bind(scope),
+                    jsUrl: scope.jsUrlCallback.bind(scope)
                 },
                 writePath: basePath
             };
@@ -262,7 +353,7 @@ class StaticExportCommand extends Command
                 query: query,
                 entities: entities,
                 writePath: basePath,
-                bundleTemplate: 'css/${site.name.urlify()}-${group}.scss'
+                bundleTemplate: scope.cssDirectory + '${site.name.urlify()}-${group}.scss'
             };
             const sassTask = scope.context.di.create(BundleSassTask, mapping)
                 .pipe(scope.context.di.create(WriteFilesTask, mapping));
@@ -274,37 +365,43 @@ class StaticExportCommand extends Command
                 query: query,
                 entities: entities,
                 writePath: basePath,
-                bundleTemplate: 'js/${site.name.urlify()}-${group}.js'
+                bundleTemplate: scope.jsDirectory + '${site.name.urlify()}-${group}.js'
             };
             const jsTask = scope.context.di.create(JspmBundleTask, mapping)
                 .pipe(scope.context.di.create(WriteFilesTask, mapping));
             yield jsTask.run(buildConfiguration, jsOptions);
 
             // Copy used images
-            for (const imageUrl in this.images)
+            for (const imageUrl in scope.images)
             {
-                const image = this.images[imageUrl];
+                const image = scope.images[imageUrl];
                 const imageSourcePath = yield imageRenderer.resize(image.image, image.width, image.height, image.forced + '');
-                const imageDestPath = path.join(basePath, image.url);
+                const imageDestPath = path.join(basePath, image.filename);
+                const work = logger.work('Adding image <' + image.image + '>');
                 yield fs.copy(imageSourcePath, imageDestPath);
+                logger.end(work);
             }
 
             // Copy used assets
-            for (const assetUrl in this.assets)
+            for (const assetUrl in scope.assets)
             {
-                const asset = this.assets[assetUrl];
+                const asset = scope.assets[assetUrl];
                 const assetSourcePath = path.join(pathesConfiguration.sites, asset.path);
-                const assetDestPath = path.join(basePath, asset.url);
+                const assetDestPath = path.join(basePath, asset.filename);
+                const work = logger.work('Adding asset <' + asset.path + '>');
                 yield fs.copy(assetSourcePath, assetDestPath);
+                logger.end(work);
             }
 
             // Copy used svgs
-            for (const svgUrl in this.svgs)
+            for (const svgUrl in scope.svgs)
             {
-                const svg = this.svgs[svgUrl];
+                const svg = scope.svgs[svgUrl];
                 const svgSourcePath = path.join(pathesConfiguration.sites, svg.path.replace(/#icon/, ''));
                 const svgDestPath = path.join(basePath, svg.url.replace(/#icon/, ''));
+                const work = logger.work('Adding svg <' + svg.path + '>');
                 yield fs.copy(svgSourcePath, svgDestPath);
+                logger.end(work);
             }
 
             // Copy configured assets
@@ -336,7 +433,11 @@ class StaticExportCommand extends Command
      */
     dispatch(action, parameters)
     {
-        return this.export(parameters);
+        if (action == 'static')
+        {
+            return this.export(parameters);
+        }
+        return Promise.resolve(false);
     }
 }
 
