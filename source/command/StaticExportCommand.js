@@ -238,8 +238,8 @@ class StaticExportCommand extends Command
         const md5 = hash.digest('hex');
         data.path = value;
         data.file = (path.basename(data.asset).split('.').shift()) + '_' + md5 + '.svg#icon';
-        data.filename = this.videoDirectory + data.file;
-        data.url = this.videoUrl + data.file;
+        data.filename = this.svgDirectory + data.file;
+        data.url = this.svgUrl + data.file;
         this.svgs[data.url] = data;
         return data.url;
     }
@@ -405,14 +405,10 @@ class StaticExportCommand extends Command
             }
 
             // Copy configured assets
-            const assetPathes =
-            {
-                'base/global/assets/fonts/*.*': 'assets/fonts'
-            };
-            for (const assetPath in assetPathes)
+            for (const assetPath in scope.moduleConfiguration.copyAssets)
             {
                 const sourcePath = path.join(pathesConfiguration.sites, assetPath);
-                const targetPath = path.join(basePath, assetPathes[assetPath]);
+                const targetPath = path.join(basePath, scope.moduleConfiguration.copyAssets[assetPath]);
                 const copyAssetsOptions =
                     {
                         readPath: sourcePath,

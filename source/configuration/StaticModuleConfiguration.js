@@ -42,6 +42,11 @@ class StaticModuleConfiguration extends Base
         this._cssUrlTemplate = buildConfiguration.get('static.cssUrlTemplate', globalConfiguration.get('static.cssUrlTemplate', ''));
         this._jsDirectoryTemplate = buildConfiguration.get('static.jsDirectoryTemplate', globalConfiguration.get('static.jsDirectoryTemplate', 'js'));
         this._jsUrlTemplate = buildConfiguration.get('static.jsUrlTemplate', globalConfiguration.get('static.jsUrlTemplate', ''));
+        this._copyAssets = buildConfiguration.get('static.copyAssets', globalConfiguration.get('static.copyAssets',
+            {
+                'base/global/assets/fonts/*.*': 'assets/fonts',
+                'base/global/assets/images/*.*': 'assets/images'
+            }));
     }
 
 
@@ -179,6 +184,15 @@ class StaticModuleConfiguration extends Base
     get jsUrlTemplate()
     {
         return this._jsUrlTemplate;
+    }
+
+
+    /**
+     * @type {Object}
+     */
+    get copyAssets()
+    {
+        return this._copyAssets;
     }
 }
 
