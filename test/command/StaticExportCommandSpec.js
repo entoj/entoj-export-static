@@ -4,7 +4,7 @@
  * Requirements
  */
 const StaticExportCommand = require(STATIC_SOURCE + '/command/StaticExportCommand.js').StaticExportCommand;
-const exportCommandSpec = require('entoj-system/test').command.ExportCommandShared;
+const baseSpec = require('entoj-system/test').BaseShared;
 const projectFixture = require('entoj-system/test').fixture.project;
 
 
@@ -22,5 +22,5 @@ describe(StaticExportCommand.className, function()
         return [fixture.context];
     }
 
-    exportCommandSpec(StaticExportCommand, 'command/StaticExportCommand', prepareParameters, { action: 'static' });
+    baseSpec(StaticExportCommand, 'command/StaticExportCommand', prepareParameters);
 });
