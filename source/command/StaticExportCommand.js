@@ -8,16 +8,19 @@ const Command = require('entoj-system').command.Command;
 const Context = require('entoj-system').application.Context;
 const CliLogger = require('entoj-system').cli.CliLogger;
 const StaticModuleConfiguration = require('../configuration/StaticModuleConfiguration.js').StaticModuleConfiguration;
+const HtmlModuleConfiguration = require('entoj-html').configuration.HtmlModuleConfiguration;
 const BeautifyHtmlTask = require('entoj-html').task.BeautifyHtmlTask;
 const ExportHtmlTask = require('entoj-html').task.ExportHtmlTask;
 const WriteFilesTask = require('entoj-system').task.WriteFilesTask;
 const ReadFilesTask = require('entoj-system').task.ReadFilesTask;
 const PathesConfiguration = require('entoj-system').model.configuration.PathesConfiguration;
 const BuildConfiguration = require('entoj-system').model.configuration.BuildConfiguration;
+const UrlsConfiguration = require('entoj-system').model.configuration.UrlsConfiguration;
 const ImageRenderer = require('entoj-image').renderer.ImageRenderer;
 const EntitiesRepository = require('entoj-system').model.entity.EntitiesRepository;
 const BundleSassTask = require('entoj-sass').task.BundleSassTask;
 const JspmBundleTask = require('entoj-jspm').task.JspmBundleTask;
+const waitForPromise = require('entoj-system').utils.synchronize.waitForPromise;
 const co = require('co');
 const fs = require('co-fs-extra');
 const crypto = require('crypto');
@@ -41,6 +44,8 @@ class StaticExportCommand extends Command
         // Assign options
         this.name = ['export'];
         this._moduleConfiguration = this.context.di.create(StaticModuleConfiguration);
+        this.htmlModuleConfiguration = this.context.di.create(HtmlModuleConfiguration);
+        this.urlsConfiguration = this.context.di.create(UrlsConfiguration);
 
         // Settings
         this.imageDirectory = 'images/';
@@ -185,6 +190,26 @@ class StaticExportCommand extends Command
      * @inheritDoc
      * @returns {String}
      */
+    linkUrlCallback(filter, value, args, data)
+    {
+        const match = waitForPromise(this.urlsConfiguration.matchEntity(value, true));
+        if (match &&
+            match.entity &&
+            match.entity.id.category.type == 'page')
+        {
+            const page = match.entity;
+            const language = filter.getGlobals().configuration.getByPath('language', this.htmlModuleConfiguration.language);
+            const result = this.htmlModuleConfiguration.getFilenameForEntity(page, language);
+            return '/' + result;
+        }
+        return value;
+    }
+
+
+    /**
+     * @inheritDoc
+     * @returns {String}
+     */
     imageUrlCallback(filter, value, args, data)
     {
         const hash = crypto.createHash('md5');
@@ -311,6 +336,7 @@ class StaticExportCommand extends Command
                 filepathTemplate: '',
                 filterCallbacks:
                 {
+                    linkUrl: scope.linkUrlCallback.bind(scope),
                     imageUrl: scope.imageUrlCallback.bind(scope),
                     assetUrl: scope.assetUrlCallback.bind(scope),
                     svgUrl: scope.svgUrlCallback.bind(scope),

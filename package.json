@@ -15,11 +15,11 @@
   "dependencies": {
     "co": "^4.6.0",
     "co-fs-extra": "^1.2.1",
-    "entoj-html": "^0.3.1",
+    "entoj-html": "^0.4.0",
     "entoj-image": "^0.3.0",
     "entoj-jspm": "^0.3.0",
-    "entoj-sass": "^0.3.0",
-    "entoj-system": "^0.3.1",
+    "entoj-sass": "^0.3.2",
+    "entoj-system": "^0.3.10",
     "es6-template-strings": "^2.0.1",
     "git-rev-promises": "^1.0.8",
     "lodash.isplainobject": "^4.0.6"
