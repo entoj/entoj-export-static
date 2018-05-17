@@ -48,6 +48,7 @@ class StaticExportCommand extends Command
         this.urlsConfiguration = this.context.di.create(UrlsConfiguration);
 
         // Settings
+        this.currentDocumentPath = '/';
         this.imageDirectory = 'images/';
         this.imageUrl = 'images/';
         this.videoDirectory = 'videos/';
@@ -185,6 +186,18 @@ class StaticExportCommand extends Command
         return promise;
     }
 
+    /**
+     * @inheritDoc
+     * @returns {String}
+     */
+    createLink(url)
+    {
+        if (this.moduleConfiguration.useAbsolutePathes)
+        {
+            return url;
+        }
+        return this.moduleConfiguration.prefixPath + path.relative(this.currentDocumentPath, url);
+    }
 
     /**
      * @inheritDoc
@@ -200,7 +213,7 @@ class StaticExportCommand extends Command
             const page = match.entity;
             const language = filter.getGlobals().configuration.getByPath('language', this.htmlModuleConfiguration.language);
             const result = this.htmlModuleConfiguration.getFilenameForEntity(page, language);
-            return '/' + result;
+            return this.createLink('/' + result);
         }
         return value;
     }
@@ -219,7 +232,7 @@ class StaticExportCommand extends Command
         hash.update(data.forced + '');
         const md5 = hash.digest('hex');
         data.file = (path.basename(data.image).split('.').shift()) + '_' + md5 + path.extname(data.image);
-        data.url = this.imageUrl + data.file;
+        data.url = this.createLink(this.imageUrl + data.file);
         data.filename = this.imageDirectory + data.file;
         this.images[data.url] = data;
         return data.url;
@@ -246,7 +259,7 @@ class StaticExportCommand extends Command
             : this.assetUrl;
         data.file = (path.basename(data.asset).split('.').shift()) + '_' + md5 + extension;
         data.filename = directory + data.file;
-        data.url = url + data.file;
+        data.url = this.createLink(url + data.file);
         this.assets[data.url] = data;
         return data.url;
     }
@@ -264,7 +277,7 @@ class StaticExportCommand extends Command
         data.path = value;
         data.file = (path.basename(data.asset).split('.').shift()) + '_' + md5 + '.svg#icon';
         data.filename = this.svgDirectory + data.file;
-        data.url = this.svgUrl + data.file;
+        data.url = this.createLink(this.svgUrl + data.file);
         this.svgs[data.url] = data;
         return data.url;
     }
@@ -276,7 +289,7 @@ class StaticExportCommand extends Command
      */
     cssUrlCallback(filter, value, args, data)
     {
-        return this.cssUrl + data.site.name.urlify() + '-' + data.group + '.css';
+        return this.createLink(this.cssUrl + data.site.name.urlify() + '-' + data.group + '.css');
     }
 
 
@@ -289,14 +302,14 @@ class StaticExportCommand extends Command
         switch (data.type)
         {
             case 'bundle':
-                data.url = this.jsUrl + data.site.name.urlify() + '-' + data.group + '.js';
+                data.url = this.createLink(this.jsUrl + data.site.name.urlify() + '-' + data.group + '.js');
                 break;
 
             case 'link':
                 const hash = crypto.createHash('md5');
                 hash.update(data.path);
                 const md5 = hash.digest('hex');
-                data.url = this.jsUrl + (path.basename(data.path).split('.').shift()) + '_' + md5 + '.js';
+                data.url = this.createLink(this.jsUrl + (path.basename(data.path).split('.').shift()) + '_' + md5 + '.js');
                 this.assets[data.url] = data;
                 break;
         }
@@ -342,6 +355,10 @@ class StaticExportCommand extends Command
                     svgUrl: scope.svgUrlCallback.bind(scope),
                     cssUrl: scope.cssUrlCallback.bind(scope),
                     jsUrl: scope.jsUrlCallback.bind(scope)
+                },
+                filenameCallback: (filename) =>
+                {
+                    scope.currentDocumentPath = '/' + path.dirname(filename);
                 },
                 writePath: basePath
             };

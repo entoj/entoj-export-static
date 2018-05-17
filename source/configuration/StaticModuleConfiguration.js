@@ -30,6 +30,8 @@ class StaticModuleConfiguration extends Base
 
         // Create configuration
         this._exportPath = buildConfiguration.get('static.exportPath', globalConfiguration.get('static.exportPath', '${cache}/static/export'));
+        this._useAbsolutePathes = buildConfiguration.get('static.useAbsolutePathes', globalConfiguration.get('static.useAbsolutePathes', false));
+        this._prefixPath = buildConfiguration.get('static.prefixPath', globalConfiguration.get('static.prefixPath', ''));
         this._imageDirectoryTemplate = buildConfiguration.get('static.imageDirectoryTemplate', globalConfiguration.get('static.imageDirectoryTemplate', 'images'));
         this._imageUrlTemplate = buildConfiguration.get('static.imageUrlTemplate', globalConfiguration.get('static.imageUrlTemplate', ''));
         this._videoDirectoryTemplate = buildConfiguration.get('static.videoDirectoryTemplate', globalConfiguration.get('static.videoDirectoryTemplate', 'videos'));
@@ -76,6 +78,28 @@ class StaticModuleConfiguration extends Base
     get exportPath()
     {
         return this._exportPath;
+    }
+
+
+    /**
+     * Should asset be linked with absolute pathes?
+     *
+     * @type {Bool}
+     */
+    get useAbsolutePathes()
+    {
+        return this._useAbsolutePathes;
+    }
+
+
+    /**
+     * A prefix path that is prepended to all generated pathes
+     *
+     * @type {String}
+     */
+    get prefixPath()
+    {
+        return this._prefixPath;
     }
 
 
