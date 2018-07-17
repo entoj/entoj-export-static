@@ -276,7 +276,7 @@ class StaticExportCommand extends Command
         const md5 = hash.digest('hex');
         data.path = value;
         data.file = (path.basename(data.asset).split('.').shift()) + '_' + md5 + '.svg#icon';
-        data.filename = this.svgDirectory + data.file;
+        data.filename = this.svgDirectory + data.file.replace(/#icon/, '');
         data.url = this.createLink(this.svgUrl + data.file);
         this.svgs[data.url] = data;
         return data.url;
@@ -376,7 +376,7 @@ class StaticExportCommand extends Command
             for (const id in exportHtmlTask.nunjucks.template.calls)
             {
                 const entity = yield entitiesRepository.getById(id);
-                if (entity)
+                if (entity && entities.indexOf(entity.entity) == -1)
                 {
                     entities.push(entity.entity);
                 }
@@ -384,7 +384,7 @@ class StaticExportCommand extends Command
             for (const id of exportHtmlTask.nunjucks.template.extends)
             {
                 const entity = yield entitiesRepository.getById(id);
-                if (entity)
+                if (entity && entities.indexOf(entity.entity) == -1)
                 {
                     entities.push(entity.entity);
                 }
@@ -420,7 +420,7 @@ class StaticExportCommand extends Command
                 const image = scope.images[imageUrl];
                 const imageSourcePath = yield imageRenderer.resize(image.image, image.width, image.height, image.forced + '');
                 const imageDestPath = path.join(basePath, image.filename);
-                const work = logger.work('Adding image <' + image.image + '>');
+                const work = logger.work('Adding image <' + image.image + '> as <' + imageDestPath + '>');
                 yield fs.copy(imageSourcePath, imageDestPath);
                 logger.end(work);
             }
@@ -431,7 +431,7 @@ class StaticExportCommand extends Command
                 const asset = scope.assets[assetUrl];
                 const assetSourcePath = path.join(pathesConfiguration.sites, asset.path);
                 const assetDestPath = path.join(basePath, asset.filename);
-                const work = logger.work('Adding asset <' + asset.path + '>');
+                const work = logger.work('Adding asset <' + asset.path + '> as <' + assetDestPath + '>');
                 yield fs.copy(assetSourcePath, assetDestPath);
                 logger.end(work);
             }
@@ -441,8 +441,8 @@ class StaticExportCommand extends Command
             {
                 const svg = scope.svgs[svgUrl];
                 const svgSourcePath = path.join(pathesConfiguration.sites, svg.path.replace(/#icon/, ''));
-                const svgDestPath = path.join(basePath, svg.url.replace(/#icon/, ''));
-                const work = logger.work('Adding svg <' + svg.path + '>');
+                const svgDestPath = path.join(basePath, svg.filename);
+                const work = logger.work('Adding svg <' + svg.path + '> as <' + svgDestPath + '>');
                 yield fs.copy(svgSourcePath, svgDestPath);
                 logger.end(work);
             }
